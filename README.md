@@ -4,7 +4,7 @@ OP: https://github.com/andersx/mcdock
 generate non-bonded amons for transition state search
 
 Requirements:<br/>
-OpenBabel
+* OpenBabel
 
 How to use:
 ```
