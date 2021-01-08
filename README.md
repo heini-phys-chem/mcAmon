@@ -1,4 +1,11 @@
 # mcAmon
+OP: https://github.com/andersx/mcdock
+
 generate non-bonded amons for transition state search
 
-OP: https://github.com/andersx/mcdock
+Requirements:
+OpenBabel
+
+How to use:
+./mcAmon --target xyz/amons1.xyz --ligand xyz/amons3.xyz
+
