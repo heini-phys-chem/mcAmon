@@ -133,6 +133,59 @@ void move_molecule(OpenBabel::OBMol &mol, OpenBabel::vector3 move, int start_id 
 
 }
 
+OpenBabel::vector3 rotate(const OpenBabel::vector3 &V, const OpenBabel::vector3 &J, const double T) {
+
+  double x = V.x();
+  double y = V.y();
+  double z = V.z();
+
+  double u = J.x();
+  double v = J.y();
+  double w = J.z();
+
+  double norm = std::sqrt(u*u + v*v + w*w);
+  double inv_norm_sqrt = 1.0 / (norm*norm);
+  double sint = std::sin(T);
+  double cost = std::cos(T);
+
+  double a = (u * (u*x + v*y + w*z) + (x * (v*v + w*w) - u * (v*y + w*z)) * cost + norm * (-w*y + v*z) * sint) * inv_norm_sqrt;
+  double b = (v * (u*x + v*y + w*z) + (y * (u*u + w*w) - v * (u*x + w*z)) * cost + norm * ( w*x - u*z) * sint) * inv_norm_sqrt;
+  double c = (w * (u*x + v*y + w*z) + (z * (u*u + v*v) - w * (u*x + v*y)) * cost + norm * (-v*x + u*y) * sint) * inv_norm_sqrt;
+
+  OpenBabel::vector3 rotated;
+  rotated.Set(a, b, c);
+
+  return rotated;
+
+}
+
+void rotate_molecule(OpenBabel::OBMol &mol, OpenBabel::vector3 direction, double theta, int start_id = 1, int end_id = -1) {
+
+  if (end_id == -1) end_id = mol.NumAtoms() + 1;
+
+  OpenBabel::vector3 com;
+  com.Set(0.0, 0.0, 0.0);
+  OpenBabel::OBAtom *atom;
+
+  for (int i = start_id; i < end_id; i++) {
+    atom = mol.GetAtom(i);
+    com += atom->GetVector();
+  }
+
+  com /= (double)(end_id - start_id);
+
+  OpenBabel::vector3 temp;
+  for (int i = start_id; i < end_id; i++) {
+    atom = mol.GetAtom(i);
+    temp = atom->GetVector();
+    temp -= com;
+    temp = rotate(temp, direction, theta);
+    temp += com;
+    atom->SetVector(temp);
+  }
+
+}
+
 void write_xyz(OpenBabel::OBMol mol, std::string filename) {
 
   OpenBabel::OBConversion conv;

@@ -44,8 +44,20 @@ int main(int argc, char *argv[]) {
   OpenBabel::vector3 vec;
 
   // move molecules to com and 2*com away
-  McAmon::move_molecule(target, -com_target);
-  McAmon::move_molecule(ligand, 2*com_ligand);
+  McAmon::move_molecule(target, 2*com_target);
+  McAmon::move_molecule(ligand, -com_ligand);
+
+  // define rotation
+  double theta = 90.0;
+  OpenBabel::vector3 rot;
+  rot.Set(0.0, 1.0, 0.0);
+
+  // rotate molecule 90 degrees
+  McAmon::rotate_molecule(ligand, rot, theta);
+//  rot.Set(0.0, 1.0, 0.0);
+//  McAmon::rotate_molecule(ligand, rot, theta);
+//  rot.Set(1.0, 0.0, 0.0);
+//  McAmon::rotate_molecule(ligand, rot, theta);
 
   // concatenate target and ligand
   OpenBabel::OBMol target_ligand = target;
@@ -55,14 +67,18 @@ int main(int argc, char *argv[]) {
   int start_id   = target_ligand.NumAtoms() - ligand.NumAtoms() + 1;
   int end_id     = target_ligand.NumAtoms() + 1; 
 
+
+  com_target = McAmon::get_com(target);
+
   // vector between both com's (target and ligand)
-  vec = com_target - com_ligand;
+  vec = com_ligand - com_target;
+  //McAmon::rotate_molecule(ligand, rot, theta, start_id, end_id);
 
   // write initial target-ligand complex
   McAmon::write_xyz(target_ligand, "test_mid.xyz");
 
   // array containing the scaling factors
-  double arr[3] = { 3.5, 3.0, 2.0 };
+  double arr[3] = { 1.5, 1.0, 0.5 };
   std::string f_out = "test_";
 
   // loop over scaling array, mvoe molecules, and write them to an xyz file
