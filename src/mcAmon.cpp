@@ -72,7 +72,6 @@ int main(int argc, char *argv[]) {
 
   // vector between both com's (target and ligand)
   vec = com_ligand - com_target;
-  //McAmon::rotate_molecule(ligand, rot, theta, start_id, end_id);
 
   // write initial target-ligand complex
   //McAmon::write_xyz(target_ligand, "test_mid.xyz");
