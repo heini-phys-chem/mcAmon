@@ -37,64 +37,115 @@ int main(int argc, char *argv[]) {
 
   // Define temp molecule to move
   OpenBabel::OBMol mol;
-  
-  // define vector for center of mass (cem)
-  OpenBabel::vector3 com_ligand = McAmon::get_com(ligand);
-  OpenBabel::vector3 com_target = McAmon::get_com(target);
-  OpenBabel::vector3 vec;
+  OpenBabel::OBConversion conv;
+  conv.SetInAndOutFormats("xyz", "xyz");
 
-  // move molecules to com and 2*com away
-  McAmon::move_molecule(target, com_target);
-  McAmon::move_molecule(ligand, -com_ligand);
+  mol = target;
 
-  // define rotation
-  double theta = 1.5708; // 90 degrees in radian
-  OpenBabel::vector3 rot;
-  rot.Set(0.0, 1.0, 1.0);
+  McAmon::center_molecule(mol);
+  McAmon::rotate_to_yz_plane(mol);
 
-  // rotate molecule 90 degrees
-  McAmon::rotate_molecule(ligand, rot, theta);
-//  rot.Set(0.0, 1.0, 0.0);
-//  McAmon::rotate_molecule(ligand, rot, theta);
-//  rot.Set(1.0, 0.0, 0.0);
-//  McAmon::rotate_molecule(ligand, rot, theta);
+  OpenBabel::vector3 tmp;
+  tmp.Set(0.0, -1.0, 0.0);
+  McAmon::move_molecule(mol, tmp);
+  //OpenBabel::vector3 ex;
+  //ex.Set(1.0, 0.0, 0.0);
+  //double angle180  = 3.14159;
 
-  // concatenate target and ligand
+  //McAmon::rotate_molecule(mol, ex, angle180);
+
+  target = mol;
+  std::ofstream ofs_target("test_target.xyz");
+  conv.Write(&target, &ofs_target);
+  ofs_target.close();
+
+  mol = ligand;
+
+  McAmon::center_molecule(mol);
+  McAmon::rotate_to_yz_plane(mol);
+
+  OpenBabel::vector3 ex;
+  ex.Set(1.0, 0.0, 0.0);
+  double angle  = 2.44346;
+
+  McAmon::rotate_molecule(mol, ex, angle);
+
+  ligand = mol;
+  std::ofstream ofs_ligand("test_ligand.xyz");
+  conv.Write(&ligand, &ofs_ligand);
+  ofs_ligand.close();
+
+
   OpenBabel::OBMol target_ligand = target;
   target_ligand += ligand;
-
   // get start and end ID of ligand in concatenated molecule
   int start_id   = target_ligand.NumAtoms() - ligand.NumAtoms() + 1;
   int end_id     = target_ligand.NumAtoms() + 1; 
 
-
-  com_target = McAmon::get_com(target);
-
-  // vector between both com's (target and ligand)
-  vec = com_ligand - com_target;
-
-  // write initial target-ligand complex
-  //McAmon::write_xyz(target_ligand, "test_mid.xyz");
-
-  // array containing the scaling factors
-  double arr[3] = { 0.5, 1.0, 1.5 };
-  OpenBabel::OBConversion conv;
-  conv.SetInAndOutFormats("xyz", "xyz");
-
   std::string target_name = opts.target;
   std::string f_out = McAmon::get_fout(target_name);
-  std::cout << f_out << std::endl;
+  // move molecules to com and 2*com away
+  //McAmon::move_molecule(target, ex);
+  //McAmon::move_molecule(ligand, -com_ligand);
 
+  // array containing the scaling factors
+  double arr[3] = { 2.0, 3.0, 4.0 };
+  OpenBabel::vector3 vec;
+  vec.Set(1.0, 0.0, 0.0);
+
+  // write initial target-ligand complex
   std::ofstream ofs_move(f_out);
-  conv.Write(&target_ligand, &ofs_move);
+
   // loop over scaling array, mvoe molecules, and write them to an xyz file
   for (int i = 0; i < 3; i++) {
     mol = target_ligand;
     McAmon::move_molecule(mol, arr[i]*vec, start_id, end_id);
     conv.Write(&mol, &ofs_move);
-    //std::stringstream ss;
-    //ss << f_out << i << ".xyz";
-    //McAmon::write_xyz(mol, ss.str());
   }
+
   ofs_move.close();
+
+
+//
+//  // define rotation
+//  double theta = 1.5708; // 90 degrees in radian
+//  OpenBabel::vector3 rot;
+//  rot.Set(1.0, 1.0, 1.0);
+//
+//  // rotate molecule 90 degrees
+//  McAmon::rotate_molecule(ligand, rot, theta);
+//
+//  // concatenate target and ligand
+//  OpenBabel::OBMol target_ligand = target;
+//  target_ligand += ligand;
+//
+//  // minimize molecule
+//  McAmon::minimize_molecule(target_ligand);
+//
+//  OpenBabel::OBConversion conv;
+//  conv.SetInAndOutFormats("xyz", "xyz");
+//  std::cout << f_out << std::endl;
+//
+//
+//
+//  com_target = McAmon::get_com(target);
+//
+//  // vector between both com's (target and ligand)
+//  vec = com_ligand - com_target;
+//
+//  // array containing the scaling factors
+//  double arr[3] = { -0.5, 0.5, 1.0 };
+//
+//  // write initial target-ligand complex
+//  std::ofstream ofs_move(f_out);
+//  conv.Write(&target_ligand, &ofs_move);
+//
+//  // loop over scaling array, mvoe molecules, and write them to an xyz file
+//  for (int i = 0; i < 3; i++) {
+//    mol = target_ligand;
+//    McAmon::move_molecule(mol, -1*arr[i]*vec, start_id, end_id);
+//    conv.Write(&mol, &ofs_move);
+//  }
+//
+//  ofs_move.close();
 }

@@ -2,6 +2,7 @@
 #define SRC_UTILS_HPP
 #define HAVE_EIGEN   
 
+
 namespace McAmon {
 
 // Container for command-line options
@@ -95,6 +96,42 @@ OpenBabel::OBMol readfile(std::string filename) {
     return mol;
 }
 
+OpenBabel::vector3 crossProduct(OpenBabel::vector3 v1, OpenBabel::vector3 v2) {
+
+  OpenBabel::vector3 v;
+  double X, Y, Z;
+
+  X = v1.GetY() * v2.GetZ() - v1.GetZ() * v2.GetY();
+  Y = v1.GetZ() * v2.GetX() - v1.GetX() * v2.GetZ();
+  Z = v1.GetX() * v2.GetY() - v1.GetY() * v2.GetX();
+
+  v.Set(X, Y, Z);
+
+  return v;
+
+}
+
+double dotProduct(OpenBabel::vector3 v1, OpenBabel::vector3 v2) {
+
+  double dot;
+
+  dot = v1.GetX()*v2.GetX() + v1.GetY()*v2.GetY() + v1.GetX()*v2.GetZ();
+
+  return dot;
+
+}
+
+double norm(OpenBabel::vector3 v) {
+  double norm;
+
+  norm = sqrt(v.GetX()*v.GetX() + v.GetY()*v.GetY() + v.GetZ()*v.GetZ()); 
+  
+  return norm;
+
+}
+
+
+
 
 OpenBabel::vector3 get_com(OpenBabel::OBMol &mol) {
 
@@ -163,26 +200,49 @@ void rotate_molecule(OpenBabel::OBMol &mol, OpenBabel::vector3 direction, double
 
   if (end_id == -1) end_id = mol.NumAtoms() + 1;
 
-  OpenBabel::vector3 com;
-  com.Set(0.0, 0.0, 0.0);
   OpenBabel::OBAtom *atom;
-
-  for (int i = start_id; i < end_id; i++) {
-    atom = mol.GetAtom(i);
-    com += atom->GetVector();
-  }
-
-  com /= (double)(end_id - start_id);
-
   OpenBabel::vector3 temp;
+
   for (int i = start_id; i < end_id; i++) {
     atom = mol.GetAtom(i);
     temp = atom->GetVector();
-    temp -= com;
     temp = rotate(temp, direction, theta);
-    temp += com;
+    
     atom->SetVector(temp);
   }
+
+}
+
+
+void rotate_to_yz_plane(OpenBabel::OBMol &mol) {
+
+  OpenBabel::vector3 v1, v2, v, ex;                                
+                                                                   
+  OpenBabel::OBAtom *atom1, *atom2, *atom3;                        
+                                                                   
+  atom1 = mol.GetAtom(1);                                          
+  atom2 = mol.GetAtom(2);                                          
+  atom3 = mol.GetAtom(3);                                          
+                                                                   
+  v1 = atom1->GetVector() - atom2->GetVector();                    
+  v2 = atom3->GetVector() - atom2->GetVector();                    
+                                                                   
+  //v = -1*McAmon::crossProduct(v1, v2);                             
+  v = -1*crossProduct(v1, v2);                             
+  double norm_v, norm_ex, theta, dot;                              
+                                                                   
+  ex.Set(1.0, 0.0, 0.0);                                           
+  //dot = McAmon::dotProduct(v, ex);                                 
+  dot = dotProduct(v, ex);                                 
+                                                                   
+  //norm_v  = McAmon::norm(v);                                       
+  norm_v  = norm(v);                                       
+  //norm_ex = McAmon::norm(ex);                                      
+  norm_ex = norm(ex);                                      
+  theta = acos(dot / (norm_v*norm_ex));                            
+                                                                   
+  //McAmon::rotate_molecule(mol, McAmon::crossProduct(v, ex), theta);
+  McAmon::rotate_molecule(mol, crossProduct(v, ex), theta);
 
 }
 
@@ -213,6 +273,47 @@ std::string get_fout(std::string name) {
 
   return name;
 }
+
+void minimize_molecule(OpenBabel::OBMol &mol) {
+  OpenBabel::OBForceField* pFF = OpenBabel::OBForceField::FindForceField("MMFF94");
+
+  pFF->Setup(mol);
+  double e = pFF->Energy();
+
+  const int steps = 200;
+  const double crit = 5.0e-4;
+
+  pFF->ConjugateGradientsInitialize(steps, crit);
+
+  bool done = true;
+
+  while (done) {
+    done = pFF->ConjugateGradientsTakeNSteps(1);
+    if (pFF->DetectExplosion()) {
+      std::cerr << "explosion has occured!" << std::endl;
+      exit(1);
+    } else {
+      pFF->GetCoordinates(mol);
+    }
+  }
+
+  e = pFF->Energy();
+  mol.SetEnergy(e);
+
+}
+
+void center_molecule(OpenBabel::OBMol &mol) {
+  OpenBabel::vector3 v;
+  OpenBabel::OBAtom *atom;
+
+  atom = mol.GetAtom(2);
+
+  v = -1*atom->GetVector();
+
+  move_molecule(mol, v);
+
+}
+
 
 }
 
