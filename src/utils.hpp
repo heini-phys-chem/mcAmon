@@ -197,6 +197,23 @@ void write_xyz(OpenBabel::OBMol mol, std::string filename) {
   ofs.close();
 }
 
+std::string get_fout(std::string name) {
+
+  std::string delimiter = "/";
+  size_t pos = 0;
+  std::string token;
+
+  while ((pos = name.find(delimiter)) != std::string::npos) {
+    token = name.substr(0, pos);
+    //std::cout << token << std::endl;
+    name.erase(0, pos + delimiter.length());
+
+  }
+  //std::cout << name << std::endl;
+
+  return name;
+}
+
 }
 
 #endif

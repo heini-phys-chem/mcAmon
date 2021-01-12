@@ -4,7 +4,7 @@
 #include <stdio.h>                 
                                    
 #include <iostream>                
-#include <sstream>
+//#include <sstream>
 #include <vector>                  
 #include <math.h>                  
 #include <string.h>                
@@ -44,13 +44,13 @@ int main(int argc, char *argv[]) {
   OpenBabel::vector3 vec;
 
   // move molecules to com and 2*com away
-  McAmon::move_molecule(target, 2*com_target);
+  McAmon::move_molecule(target, com_target);
   McAmon::move_molecule(ligand, -com_ligand);
 
   // define rotation
-  double theta = 90.0;
+  double theta = 1.5708; // 90 degrees in radian
   OpenBabel::vector3 rot;
-  rot.Set(0.0, 1.0, 0.0);
+  rot.Set(0.0, 1.0, 1.0);
 
   // rotate molecule 90 degrees
   McAmon::rotate_molecule(ligand, rot, theta);
@@ -75,18 +75,27 @@ int main(int argc, char *argv[]) {
   //McAmon::rotate_molecule(ligand, rot, theta, start_id, end_id);
 
   // write initial target-ligand complex
-  McAmon::write_xyz(target_ligand, "test_mid.xyz");
+  //McAmon::write_xyz(target_ligand, "test_mid.xyz");
 
   // array containing the scaling factors
-  double arr[3] = { 1.5, 1.0, 0.5 };
-  std::string f_out = "test_";
+  double arr[3] = { 0.5, 1.0, 1.5 };
+  OpenBabel::OBConversion conv;
+  conv.SetInAndOutFormats("xyz", "xyz");
 
+  std::string target_name = opts.target;
+  std::string f_out = McAmon::get_fout(target_name);
+  std::cout << f_out << std::endl;
+
+  std::ofstream ofs_move(f_out);
+  conv.Write(&target_ligand, &ofs_move);
   // loop over scaling array, mvoe molecules, and write them to an xyz file
   for (int i = 0; i < 3; i++) {
     mol = target_ligand;
     McAmon::move_molecule(mol, arr[i]*vec, start_id, end_id);
-    std::stringstream ss;
-    ss << f_out << i << ".xyz";
-    McAmon::write_xyz(mol, ss.str());
+    conv.Write(&mol, &ofs_move);
+    //std::stringstream ss;
+    //ss << f_out << i << ".xyz";
+    //McAmon::write_xyz(mol, ss.str());
   }
+  ofs_move.close();
 }
